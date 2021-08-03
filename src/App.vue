@@ -12,17 +12,27 @@
               <input
                 v-model="ticker"
                 @keydown.enter="add"
+                @input="showCoins"
                 type="text"
                 name="wallet"
                 id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
                 placeholder="Например DOGE"
+                autocomplete="off"
               />
             </div>
+            <span 
+              v-for="(possibleCoin, index) in possibleCoins" 
+              :key="index"
+              @click="add(null, possibleCoin)"
+              class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              {{ possibleCoin }}
+            </span>
+            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
         </div>
         <button
-          @click="add"
+          @click="add(null, null)"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -139,33 +149,44 @@ export default {
       ticker: "",
       tickers: [],
       sel: null,
-      graph: []
+      graph: [],
+      coinsList: [],
+      possibleCoins: [],
     };
   },
 
   methods: {
-    add() {
+    add(trash, value) {
+      console.log('value: ', value);
+      
+      console.log(this.canAddTicker(value));
+      if (this.canAddTicker(value) || this.canAddTicker(this.ticker)) {
       const currentTicker = {
-        name: this.ticker,
+        name: value || this.ticker,
         price: "-"
       };
 
       this.tickers.push(currentTicker);
       setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
-        );
-        const data = await f.json();
+        try {
+          const f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
+          );
+          const data = await f.json();
 
-        // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-        this.tickers.find(t => t.name === currentTicker.name).price =
-          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+          // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+          this.tickers.find(t => t.name === currentTicker.name).price =
+            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
 
-        if (this.sel?.name === currentTicker.name) {
-          this.graph.push(data.USD);
+          if (this.sel?.name === currentTicker.name) {
+            this.graph.push(data.USD);
+        }        } catch(e) {
+          console.log(e)
         }
+        
       }, 5000);
-      this.ticker = "";
+      this.ticker = "";     
+      }
     },
 
     select(ticker) {
@@ -183,7 +204,53 @@ export default {
       return this.graph.map(
         price => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
+    },
+
+    shuffleArray(array) {
+      let currentIndex = array.length,  randomIndex;
+
+        while (0 !== currentIndex) {
+
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex--;
+
+          [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex], array[currentIndex]];
+        }
+
+        return array;   
+      },
+
+    showCoins(event) {
+      const value = event.target.value.toUpperCase();
+      this.ticker = this.ticker.toUpperCase().trim();
+
+      this.possibleCoins = Object.keys(this.coinsList).filter(item => item.includes(value));
+      this.shuffleArray(this.possibleCoins);
+      this.possibleCoins = this.possibleCoins.slice(0, 4);
+
+      console.log(value);
+      console.log(this.possibleCoins)
+    },
+
+    async getCoinsList() {
+      const f = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true');
+      this.coinsList = (await f.json()).Data;
+
+      console.log(this.coinsList);
+    },
+
+    canAddTicker(value) {
+      return this.tickers.every(item => item.name !== value);
     }
+  },
+
+  // computed: {
+
+  // },
+
+  mounted() {
+    this.getCoinsList();
   }
 };
 </script>
