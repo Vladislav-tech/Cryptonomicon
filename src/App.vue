@@ -161,6 +161,18 @@ export default {
     };
   },
 
+  created() {
+    const tickersData = localStorage.getItem('tickers');
+
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach(ticker => {
+        console.log(ticker);
+        this.updateTickerPrices(ticker.name);
+      })
+    }
+  },
+
   methods: {
     add(value) {
       value === "click" || value === "enter" ? (value = this.ticker) : "";
@@ -172,26 +184,34 @@ export default {
         };
 
         this.tickers.push(currentTicker);
+
+        localStorage.setItem('tickers', JSON.stringify(this.tickers));
+
+        this.updateTickerPrices(currentTicker.name)
+      }
+    },
+
+    updateTickerPrices(tickerName) {
         setInterval(async () => {
           try {
             const f = await fetch(
-              `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
+              `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
             );
             const data = await f.json();
 
-            // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-            this.tickers.find(t => t.name === currentTicker.name).price =
-              data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+            const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
+              if (tickerToUpdate) {
+                tickerToUpdate.price = data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+              }
 
-            if (this.sel?.name === currentTicker.name) {
+            if (this.sel?.name === tickerName) {
               this.graph.push(data.USD);
             }
           } catch (e) {
-            console.warn(e);
+            console.log(e);
           }
         }, 1000);
-        this.ticker = "";
-      }
+        this.ticker = "";    
     },
 
     select(ticker) {
@@ -201,6 +221,9 @@ export default {
 
     handleDelete(tickerToRemove) {
       this.tickers = this.tickers.filter(t => t !== tickerToRemove);
+      this.graph = [];
+      localStorage.clear();
+      localStorage.setItem('tickers', JSON.stringify(this.tickers.filter(t => t !== tickerToRemove)));
     },
 
     normalizeGraph() {
