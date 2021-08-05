@@ -7,7 +7,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "deploy": "gh-pages -d build"
+    "deploy": "sh deploy.sh"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.3.3",
