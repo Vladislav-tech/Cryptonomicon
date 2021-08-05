@@ -11,7 +11,7 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="ticker"
-                @keydown.enter="add"
+                @keydown.enter="add('enter')"
                 @input="showCoins"
                 type="text"
                 name="wallet"
@@ -24,15 +24,15 @@
             <span 
               v-for="(possibleCoin, index) in possibleCoins" 
               :key="index"
-              @click="add(null, possibleCoin)"
+              @click="add(possibleCoin)"
               class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
               {{ possibleCoin }}
             </span>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-if="error" class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
         </div>
         <button
-          @click="add(null, null)"
+          @click="add('click')"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -152,15 +152,18 @@ export default {
       graph: [],
       coinsList: [],
       possibleCoins: [],
+      error: false,
     };
   },
 
   methods: {
-    add(trash, value) {
+    add(value) {
       console.log('value: ', value);
+
+      value === 'click' || value === 'enter' ? value = this.ticker : '';
+
       
-      console.log(this.canAddTicker(value));
-      if (this.canAddTicker(value) || this.canAddTicker(this.ticker)) {
+      if (this.canAddTicker(value)) {
       const currentTicker = {
         name: value || this.ticker,
         price: "-"
@@ -241,7 +244,12 @@ export default {
     },
 
     canAddTicker(value) {
-      return this.tickers.every(item => item.name !== value);
+      if (this.tickers.length) {
+        this.error = this.tickers.some(item => item.name === value);
+        return this.tickers.every(item => item.name !== value)
+      }  else {
+        return true;
+      }
     }
   },
 
