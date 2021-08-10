@@ -31,9 +31,11 @@
             >
               {{ possibleCoin }}
             </button>
-            <div v-if="error" class="text-sm text-red-600">
-              Такой тикер уже добавлен
-            </div>
+            <transition name="bounce">
+              <div v-if="error" class="text-sm text-red-600">
+                Такой тикер уже добавлен
+              </div>
+            </transition>
           </div>
         </div>
         <button
@@ -56,7 +58,8 @@
           </svg>
           Добавить
         </button>
-        <div>
+        <transition-group tag="div" name="bounce">
+          <template v-if="tickers.length">
           <button 
             class="bg-blue-500 hover:bg-blue-400 text-white mr-2 font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded"
             v-for="currency in currencies" :key="currency"
@@ -64,9 +67,11 @@
             >
             {{ currency }}
           </button>      
-        </div>
+          </template>
+        </transition-group>
       </section>
 
+      <transition-group name="fade">
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
         <p>
@@ -160,6 +165,7 @@
         </transition-group>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
+      </transition-group>
       <section v-if="sel" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ sel.name }} - {{ choosedCurrency }}
@@ -313,6 +319,10 @@ export default {
       this.filteredTickers();
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
       this.page = 1;
+    },
+
+    error() {
+      setTimeout(()=> this.error = false, 3500);
     }
   },
 
@@ -321,6 +331,7 @@ export default {
       value === "click" || value === "enter" ? (value = this.ticker) : "";
 
       if (this.canAddTicker(value)) {
+        console.log(111)
         const currentTicker = {
           name: value || this.ticker,
           price: "-",
@@ -356,7 +367,6 @@ export default {
 
           const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
           if (tickerToUpdate) {
-            console.log(`${this.choosedCurrency}: ${data[this.choosedCurrency]}`)
             tickerToUpdate.price =
               data[`${this.choosedCurrency}`] > 1 ? +data[`${this.choosedCurrency}`].toFixed(2) : +data[`${this.choosedCurrency}`].toPrecision(2);
             tickerToUpdate.image =

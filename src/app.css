@@ -14,3 +14,32 @@
 .list-move {
   transition: transform 0.8s ease;
 }
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.8s linear;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.bounce-enter-active {
+  animation: bounce-in 0.7s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.7s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.4);
+  }
+  50% {
+    transform: scale(1.10);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
