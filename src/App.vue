@@ -60,9 +60,27 @@
 
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
+        <p>
+          Фильтры: 
+          <input 
+            v-model="filterName"
+            type="text"
+            placeholder="Имя"
+            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md">
+          <button 
+            v-if="page > 1"
+            @click="page--"
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Назад</button>
+          <button
+            v-if="hasNextPage"
+            @click="page++" 
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Вперёд</button>
+        </p>
+        
+        <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in tickers"
+            v-for="t in filteredTickers()"
             :key="t.name"
             @click="select(t)"
             :class="{
@@ -157,19 +175,57 @@ export default {
       graph: [],
       coinsList: [],
       possibleCoins: [],
-      error: false
+      error: false,
+      page: 1,
+      hasNextPage: true,
+      filterName: '',
+      filterPrice: {
+        max: 0,
+        min: 0,
+      },
     };
   },
 
   created() {
+    const windowData = Object.fromEntries(new URL(window.location).searchParams.entries())
+
+    if (windowData.filter) {
+      this.filterName = windowData.filter
+    }
+
+    if (windowData.page) {
+      this.page = windowData.page;
+    }
+
     const tickersData = localStorage.getItem('tickers');
 
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach(ticker => {
-        console.log(ticker);
         this.updateTickerPrices(ticker.name);
       })
+    }
+  },
+
+  watch: {
+    filterName() {
+      this.page = 1;
+
+      const { pathname } = window.location;
+      window.history.pushState(
+        null, 
+        document.title, 
+        `${pathname}?filter=${this.filterName}&page=${this.page}`)
+
+    },
+
+    page() {
+      const { pathname } = window.location;
+      window.history.pushState(
+        null, 
+        document.title, 
+        `${pathname}?filter=${this.filterName}&page=${this.page}`)
+
     }
   },
 
@@ -187,7 +243,8 @@ export default {
 
         localStorage.setItem('tickers', JSON.stringify(this.tickers));
 
-        this.updateTickerPrices(currentTicker.name)
+        this.updateTickerPrices(currentTicker.name);
+        this.filterName = '';
       }
     },
 
@@ -195,7 +252,7 @@ export default {
         setInterval(async () => {
           try {
             const f = await fetch(
-              `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
+              `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=7988483396dcdf51392e965e28d73a3071ac10bfb3c69d5ebb9d39c130ba8b2b`
             );
             const data = await f.json();
 
@@ -210,8 +267,19 @@ export default {
           } catch (e) {
             console.log(e);
           }
-        }, 1000);
+        }, 5000);
         this.ticker = "";    
+    },
+
+    filteredTickers() {
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+
+      const filteredTickersList = this.tickers.filter(ticker => ticker.name.includes(this.filterName));
+
+      this.hasNextPage = filteredTickersList.length > end;
+      
+      return filteredTickersList.slice(start, end);
     },
 
     select(ticker) {
@@ -285,6 +353,7 @@ export default {
 
   mounted() {
     this.getCoinsList();
+
   }
 };
 </script>
