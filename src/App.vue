@@ -76,7 +76,18 @@
             @click="page++" 
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Вперёд</button>
         </p>
-        
+        <p>
+          Сортировка
+          <select id="sortings"
+            v-model="sorting"
+            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md">
+          >
+            <option value="name A-Z">По названию</option>
+            <option value="name Z-A">По названию (обратный порядок)</option>
+            <option value="price ascending">Цена (возрастание)</option>
+            <option value="price descending">Цена (убывание) </option>
+          </select>
+        </p>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
@@ -92,6 +103,9 @@
               <dt class="text-sm font-medium text-gray-500 truncate">
                 {{ t.name }} - USD
               </dt>
+              <span class="flex items-center justify-center">
+                <img :src="t.image">
+              </span>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ t.price }}
               </dd>
@@ -178,6 +192,8 @@ export default {
       error: false,
       page: 1,
       hasNextPage: true,
+      image: '',
+      sorting: '',
       filterName: '',
       filterPrice: {
         max: 0,
@@ -226,6 +242,46 @@ export default {
         document.title, 
         `${pathname}?filter=${this.filterName}&page=${this.page}`)
 
+    },
+    
+    sorting() {
+      switch(this.sorting) {
+        case 'name A-Z':
+          this.tickers = this.tickers.sort((a, b) => {
+            if (a.name > b.name) {
+              return 1;
+            }
+            if (a.name < b.name) {
+              return -1;
+            }
+            if (a.name === b.name) {
+              return 0;
+            }
+          });
+        break;
+        case 'name Z-A':
+          this.tickers = this.tickers.sort((a, b) => {
+            if (a.name > b.name) {
+              return -1;
+            }
+            if (a.name < b.name) {
+              return 1;
+            }
+            if (a.name === b.name) {
+              return 0;
+            }
+          });
+        break;
+        case 'price ascending':
+          this.tickers = this.tickers.sort((a, b) => a.price - b.price);
+        break;
+        case 'price descending':
+          this.tickers = this.tickers.sort((a, b) => b.price - a.price);
+      }
+
+      this.filteredTickers();
+
+      this.page = 1;
     }
   },
 
@@ -236,7 +292,8 @@ export default {
       if (this.canAddTicker(value)) {
         const currentTicker = {
           name: value || this.ticker,
-          price: "-"
+          price: "-",
+          image: '',
         };
 
         this.tickers.push(currentTicker);
@@ -255,10 +312,12 @@ export default {
               `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=7988483396dcdf51392e965e28d73a3071ac10bfb3c69d5ebb9d39c130ba8b2b`
             );
             const data = await f.json();
+            console.log(this.coinsList[`${tickerName}`].ImageUrl);
 
             const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
               if (tickerToUpdate) {
-                tickerToUpdate.price = data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+                tickerToUpdate.price = data.USD > 1 ? +data.USD.toFixed(2) : +data.USD.toPrecision(2);
+                tickerToUpdate.image = 'https://www.cryptocompare.com' + this.coinsList[`${tickerName}`].ImageUrl;
               }
 
             if (this.sel?.name === tickerName) {
