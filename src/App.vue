@@ -56,40 +56,67 @@
           </svg>
           Добавить
         </button>
+        <div>
+          <button 
+            class="bg-blue-500 hover:bg-blue-400 text-white mr-2 font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded"
+            v-for="currency in currencies" :key="currency"
+            @click="switchCurrency(currency)"
+            >
+            {{ currency }}
+          </button>      
+        </div>
       </section>
 
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
         <p>
-          Фильтры: 
-          <input 
+          Фильтры:
+          <input
             v-model="filterName"
             type="text"
             placeholder="Имя"
-            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md">
-          <button 
+            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+          />
+          <button
             v-if="page > 1"
             @click="page--"
-            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Назад</button>
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Назад
+          </button>
           <button
             v-if="hasNextPage"
-            @click="page++" 
-            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Вперёд</button>
+            @click="page++"
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Вперёд
+          </button>
         </p>
         <p>
           Сортировка
-          <select id="sortings"
+          <select
+            id="sortings"
             v-model="sorting"
-            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md">
+            class="block border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
           >
+            >
             <option value="name A-Z">По названию</option>
             <option value="name Z-A">По названию (обратный порядок)</option>
             <option value="price ascending">Цена (возрастание)</option>
             <option value="price descending">Цена (убывание) </option>
           </select>
         </p>
+        <button 
+          type="button"
+          class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          @click="clearTickers"
+          >Очистить</button>
         <hr class="w-full border-t border-gray-600 my-4" />
-        <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <transition-group
+          name="list"
+          tag="dl"
+          class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3"
+        >
           <div
             v-for="t in filteredTickers()"
             :key="t.name"
@@ -101,13 +128,13 @@
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ t.name }} - USD
+                {{ t.name }} - {{ choosedCurrency }}
               </dt>
               <span class="flex items-center justify-center">
-                <img :src="t.image">
+                <img :src="t.image" />
               </span>
-              <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ t.price }}
+              <dd class="mt-1 text-2xl font-semibold text-green-600">
+                {{ numberWithSpaces(t.price) }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -130,12 +157,12 @@
               >Удалить
             </button>
           </div>
-        </dl>
+        </transition-group>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
       <section v-if="sel" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sel.name }} - USD
+          {{ sel.name }} - {{ choosedCurrency }}
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -184,6 +211,7 @@ export default {
   data() {
     return {
       ticker: "",
+      currencies: ['USD', 'RUB', 'EUR', 'JPY'],
       tickers: [],
       sel: null,
       graph: [],
@@ -192,34 +220,37 @@ export default {
       error: false,
       page: 1,
       hasNextPage: true,
-      image: '',
-      sorting: '',
-      filterName: '',
+      image: "",
+      sorting: "",
+      choosedCurrency: 'USD',
+      filterName: "",
       filterPrice: {
         max: 0,
-        min: 0,
-      },
+        min: 0
+      }
     };
   },
 
   created() {
-    const windowData = Object.fromEntries(new URL(window.location).searchParams.entries())
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
 
     if (windowData.filter) {
-      this.filterName = windowData.filter
+      this.filterName = windowData.filter;
     }
 
     if (windowData.page) {
       this.page = windowData.page;
     }
 
-    const tickersData = localStorage.getItem('tickers');
+    const tickersData = localStorage.getItem("tickers");
 
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach(ticker => {
         this.updateTickerPrices(ticker.name);
-      })
+      });
     }
   },
 
@@ -229,24 +260,24 @@ export default {
 
       const { pathname } = window.location;
       window.history.pushState(
-        null, 
-        document.title, 
-        `${pathname}?filter=${this.filterName}&page=${this.page}`)
-
+        null,
+        document.title,
+        `${pathname}?filter=${this.filterName}&page=${this.page}`
+      );
     },
 
     page() {
       const { pathname } = window.location;
       window.history.pushState(
-        null, 
-        document.title, 
-        `${pathname}?filter=${this.filterName}&page=${this.page}`)
-
+        null,
+        document.title,
+        `${pathname}?filter=${this.filterName}&page=${this.page}`
+      );
     },
-    
+
     sorting() {
-      switch(this.sorting) {
-        case 'name A-Z':
+      switch (this.sorting) {
+        case "name A-Z":
           this.tickers = this.tickers.sort((a, b) => {
             if (a.name > b.name) {
               return 1;
@@ -258,8 +289,8 @@ export default {
               return 0;
             }
           });
-        break;
-        case 'name Z-A':
+          break;
+        case "name Z-A":
           this.tickers = this.tickers.sort((a, b) => {
             if (a.name > b.name) {
               return -1;
@@ -271,16 +302,16 @@ export default {
               return 0;
             }
           });
-        break;
-        case 'price ascending':
+          break;
+        case "price ascending":
           this.tickers = this.tickers.sort((a, b) => a.price - b.price);
-        break;
-        case 'price descending':
+          break;
+        case "price descending":
           this.tickers = this.tickers.sort((a, b) => b.price - a.price);
       }
 
       this.filteredTickers();
-
+      localStorage.setItem("tickers", JSON.stringify(this.tickers));
       this.page = 1;
     }
   },
@@ -293,51 +324,66 @@ export default {
         const currentTicker = {
           name: value || this.ticker,
           price: "-",
-          image: '',
+          image: "",
+          currency: this.choosedCurrency,
         };
 
         this.tickers.push(currentTicker);
 
-        localStorage.setItem('tickers', JSON.stringify(this.tickers));
+        localStorage.setItem("tickers", JSON.stringify(this.tickers));
 
         this.updateTickerPrices(currentTicker.name);
-        this.filterName = '';
+        this.filterName = "";
       }
     },
 
+    clearTickers() {
+      this.tickers = [];
+      localStorage.clear();
+    },
+
+    switchCurrency(newCurrency) {
+      this.choosedCurrency = newCurrency;
+    },
+
     updateTickerPrices(tickerName) {
-        setInterval(async () => {
-          try {
-            const f = await fetch(
-              `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=7988483396dcdf51392e965e28d73a3071ac10bfb3c69d5ebb9d39c130ba8b2b`
-            );
-            const data = await f.json();
-            console.log(this.coinsList[`${tickerName}`].ImageUrl);
+      setInterval(async () => {
+        try {
+          const f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD,JPY,EUR,RUB&api_key=7988483396dcdf51392e965e28d73a3071ac10bfb3c69d5ebb9d39c130ba8b2b`
+          );
+          const data = await f.json();
 
-            const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
-              if (tickerToUpdate) {
-                tickerToUpdate.price = data.USD > 1 ? +data.USD.toFixed(2) : +data.USD.toPrecision(2);
-                tickerToUpdate.image = 'https://www.cryptocompare.com' + this.coinsList[`${tickerName}`].ImageUrl;
-              }
-
-            if (this.sel?.name === tickerName) {
-              this.graph.push(data.USD);
-            }
-          } catch (e) {
-            console.log(e);
+          const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
+          if (tickerToUpdate) {
+            console.log(`${this.choosedCurrency}: ${data[this.choosedCurrency]}`)
+            tickerToUpdate.price =
+              data[`${this.choosedCurrency}`] > 1 ? +data[`${this.choosedCurrency}`].toFixed(2) : +data[`${this.choosedCurrency}`].toPrecision(2);
+            tickerToUpdate.image =
+              "https://www.cryptocompare.com" +
+              this.coinsList[`${tickerName}`].ImageUrl;
           }
-        }, 5000);
-        this.ticker = "";    
+
+          if (this.sel?.name === tickerName) {
+            this.graph.push(data.USD);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }, 3500);
+      this.ticker = "";
     },
 
     filteredTickers() {
       const start = (this.page - 1) * 6;
       const end = this.page * 6;
 
-      const filteredTickersList = this.tickers.filter(ticker => ticker.name.includes(this.filterName));
+      const filteredTickersList = this.tickers.filter(ticker =>
+        ticker.name.includes(this.filterName)
+      );
 
       this.hasNextPage = filteredTickersList.length > end;
-      
+
       return filteredTickersList.slice(start, end);
     },
 
@@ -350,7 +396,10 @@ export default {
       this.tickers = this.tickers.filter(t => t !== tickerToRemove);
       this.graph = [];
       localStorage.clear();
-      localStorage.setItem('tickers', JSON.stringify(this.tickers.filter(t => t !== tickerToRemove)));
+      localStorage.setItem(
+        "tickers",
+        JSON.stringify(this.tickers.filter(t => t !== tickerToRemove))
+      );
     },
 
     normalizeGraph() {
@@ -376,6 +425,12 @@ export default {
       }
 
       return array;
+    },
+
+    numberWithSpaces(x) {
+      const parts = x.toString().split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return parts.join(".");
     },
 
     showCoins(event) {
@@ -412,7 +467,6 @@ export default {
 
   mounted() {
     this.getCoinsList();
-
   }
 };
 </script>
