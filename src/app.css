@@ -43,3 +43,7 @@
     transform: scale(1);
   }
 }
+
+.ticker-img {
+  max-width: 125px;
+}
