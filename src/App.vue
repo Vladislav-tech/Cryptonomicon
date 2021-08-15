@@ -146,7 +146,7 @@
                 <img class="ticker-img" :src="t.image" />
               </span>
               <dd class="mt-1 text-2xl font-semibold text-green-600">
-                {{ numberWithSpaces(t.price) || t.message}}
+                {{ formatPrice(t.price) }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -217,7 +217,7 @@
 </template>
 
 <script>
-import { loadTicker } from './api';
+import { subscribeToTicker, unSubscribeFromTicker, unSubscribeFromTickers } from './api';
 import { getCoinsList } from './api';
 
 export default {
@@ -264,9 +264,11 @@ export default {
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach(ticker => {
-        this.updateTickerPrices(ticker.name);
-      });
+        subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice));
+      })
     }
+
+    setInterval(() => this.updateTickers(), 3500);
   },
 
   watch: {
@@ -359,12 +361,22 @@ export default {
 
         this.tickers = [...this.tickers, currentTicker];
 
-        this.updateTickerPrices(currentTicker.name);
         this.filterName = "";
+        this.ticker = "";
+        // this.tickers.forEach(ticker => {
+        //   subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice));
+        // });
+        console.log(currentTicker.name);
+        subscribeToTicker(currentTicker.name, newPrice =>
+          this.updateTicker(currentTicker.name, newPrice)
+        )
+
+
       }
     },
 
     clearTickers() {
+      unSubscribeFromTickers(this.tickers);
       this.tickers = [];
       localStorage.clear();
     },
@@ -373,36 +385,39 @@ export default {
       this.choosedCurrency = newCurrency;
     },
 
-    updateTickerPrices(tickerName) {
-      setInterval(async () => {
-        try {
-          const data = await loadTicker(tickerName);
+    formatPrice(price) {
+      if (typeof price === 'number') {
+        return price > 1 ? +price.toFixed(3) : +price.toPrecision(3);
+      }
+    },
 
-          const tickerToUpdate = this.tickers.find(t => t.name === tickerName);
-          if (tickerToUpdate) {
-            // If the coin doesn't exist
-            if (data.Message) {
-              tickerToUpdate.price = 'This coin doesn\'t exist';
-            } else {
-              tickerToUpdate.price =
-                data[`${this.choosedCurrency}`] > 1
-                  ? +data[`${this.choosedCurrency}`].toFixed(2)
-                  : +data[`${this.choosedCurrency}`].toPrecision(2);
-              tickerToUpdate.image =
-                "https://www.cryptocompare.com" +
-                this.coinsList[`${tickerName}`].ImageUrl;            
-              }
+    updateTicker(tickerName, price) {
+      this.tickers
+        .filter(t => t.name === tickerName)
+        .forEach(t => t.price = price);
+    },
 
-          }
+    async updateTickers() {
+      // if (!this.tickers.length) {
+      //   return;
+      // }
+      
+      // // const exchangedData  = await loadTickers(this.tickers.map( t => t.name));
 
-          if (this.selectedTicker?.name === tickerName) {
-            this.graph.push(data.USD);
-          }
-        } catch (e) {
-          console.log(e);
-        }
-      }, 3500);
-      this.ticker = "";
+      // this.tickers.forEach(ticker => {
+      //   const price = exchangedData[ticker.name.toUpperCase()];
+      //   const image = "https://www.cryptocompare.com" +
+      //            this.coinsList[ticker.name].ImageUrl;
+
+      //   if (!price) {
+      //     ticker.price = 'This coin is not available now. Sorry...';
+      //     return;
+      //   }
+
+      //   const normalizedPrice = price;
+      //   ticker.price = normalizedPrice;
+      //   ticker.image = image;
+      // })
     },
 
     select(ticker) {
@@ -415,6 +430,8 @@ export default {
         this.selectedTicker = null;
       }
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
+      console.log(tickerToRemove);
+      unSubscribeFromTicker(tickerToRemove.name)
     },
 
     shuffleArray(array) {
@@ -435,11 +452,13 @@ export default {
     },
 
     numberWithSpaces(x) {
-      if (!x) {
-        return null;
+      if (typeof x !== 'number') {
+        return;
       }
+      x = this.formatPrice(x);
       const parts = x.toString().split(".");
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      console.log(parts.join("."));
       return parts.join(".");
     },
 
@@ -466,6 +485,7 @@ export default {
   },
 
   computed: {
+
     startIndex() {
       return (this.page - 1) * 6;
     },
