@@ -268,7 +268,6 @@ export default {
       })
     }
 
-    setInterval(() => this.updateTickers(), 3500);
   },
 
   watch: {
@@ -355,7 +354,8 @@ export default {
         const currentTicker = {
           name: value || this.ticker,
           price: "-",
-          image: "",
+          image: "https://www.cryptocompare.com" +
+                this.coinsList[this.name]?.ImageUrl || "",
           currency: this.choosedCurrency
         };
 
@@ -363,14 +363,13 @@ export default {
 
         this.filterName = "";
         this.ticker = "";
-        // this.tickers.forEach(ticker => {
-        //   subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice));
-        // });
-        console.log(currentTicker.name);
+        this.possibleCoins = [];
+
         subscribeToTicker(currentTicker.name, newPrice =>
           this.updateTicker(currentTicker.name, newPrice)
         )
 
+        this.addImageToTicker();
 
       }
     },
@@ -394,30 +393,12 @@ export default {
     updateTicker(tickerName, price) {
       this.tickers
         .filter(t => t.name === tickerName)
-        .forEach(t => t.price = price);
-    },
-
-    async updateTickers() {
-      // if (!this.tickers.length) {
-      //   return;
-      // }
-      
-      // // const exchangedData  = await loadTickers(this.tickers.map( t => t.name));
-
-      // this.tickers.forEach(ticker => {
-      //   const price = exchangedData[ticker.name.toUpperCase()];
-      //   const image = "https://www.cryptocompare.com" +
-      //            this.coinsList[ticker.name].ImageUrl;
-
-      //   if (!price) {
-      //     ticker.price = 'This coin is not available now. Sorry...';
-      //     return;
-      //   }
-
-      //   const normalizedPrice = price;
-      //   ticker.price = normalizedPrice;
-      //   ticker.image = image;
-      // })
+        .forEach(t => {
+          if (t === this.selectedTicker) {
+            this.graph.push(price);
+          }
+          t.price = price
+          });
     },
 
     select(ticker) {
@@ -430,7 +411,6 @@ export default {
         this.selectedTicker = null;
       }
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
-      console.log(tickerToRemove);
       unSubscribeFromTicker(tickerToRemove.name)
     },
 
@@ -471,6 +451,13 @@ export default {
       );
       this.shuffleArray(this.possibleCoins);
       this.possibleCoins = this.possibleCoins.slice(0, 4);
+    },
+
+    addImageToTicker() {
+      this.tickers.forEach(ticker => {
+        ticker.image = "https://www.cryptocompare.com" +
+                this.coinsList[ticker.name]?.ImageUrl
+      })
     },
 
     canAddTicker(value) {
