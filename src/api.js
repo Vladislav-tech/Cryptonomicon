@@ -60,7 +60,6 @@ function sendToWebSocket(message) {
 
 }
 
-<<<<<<< HEAD
 function subscribeToTickerOnWs(ticker, currency = 'USD') {
     sendToWebSocket({
         "action": "SubAdd",
@@ -73,30 +72,6 @@ function UnSubscribeFromTickerOnWs(ticker, currency = 'USD') {
         "action": "SubRemove",
         "subs": [`5~CCCAGG~${ticker}~${currency}`],
     });
-=======
-function subscribeToTickerOnWs(ticker) {
-    sendToWebSocket({
-        "action": "SubAdd",
-        "subs": [`5~CCCAGG~${ticker}~USD`],
-    });
-}
-
-function UnSubscribeFromTickerOnWs(ticker) {
-    sendToWebSocket({
-        "action": "SubRemove",
-        "subs": [`5~CCCAGG~${ticker}~USD`],
-    });
-}
-
-function UnSubscribeFromTickersOnWs(tickers) {
-    tickers.forEach(ticker => {
-        sendToWebSocket({
-            "action": "SubRemove",
-            "subs": [`5~CCCAGG~${ticker.name}~USD`],
-        });    
-    });
-
->>>>>>> 271afee... add websockets
 }
 
 function UnSubscribeFromTickersOnWs(tickers, currency = 'USD') {
@@ -112,30 +87,17 @@ function UnSubscribeFromTickersOnWs(tickers, currency = 'USD') {
 export const subscribeToTicker = (ticker, currency, callback) => {
     const subscribers = tickersHandlers.get(ticker) || [];
     tickersHandlers.set(ticker, [...subscribers, callback]);
-<<<<<<< HEAD
     subscribeToTickerOnWs(ticker, currency);
-=======
-    subscribeToTickerOnWs(ticker);
->>>>>>> 271afee... add websockets
 };
 
 export const unSubscribeFromTicker = (ticker, currency = 'USD') => {
     tickersHandlers.delete(ticker);
-<<<<<<< HEAD
     UnSubscribeFromTickerOnWs(ticker, currency);
 };
 
 export const unSubscribeFromTickers = (tickers, currency = 'USD') => {
     tickersHandlers.clear();
     UnSubscribeFromTickersOnWs(tickers, currency);
-=======
-    UnSubscribeFromTickerOnWs(ticker);
-};
-
-export const unSubscribeFromTickers = (tickers) => {
-    tickersHandlers.clear();
-    UnSubscribeFromTickersOnWs(tickers);
->>>>>>> 271afee... add websockets
 };
 
 window.tickersHandlers = tickersHandlers;

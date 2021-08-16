@@ -365,13 +365,8 @@ export default {
         this.ticker = "";
         this.possibleCoins = [];
 
-<<<<<<< HEAD
         subscribeToTicker(currentTicker.name, currentTicker.currency, newPrice =>
           this.updateTicker(currentTicker.name, currentTicker.currency, newPrice)
-=======
-        subscribeToTicker(currentTicker.name, newPrice =>
-          this.updateTicker(currentTicker.name, newPrice)
->>>>>>> 271afee... add websockets
         )
 
         this.addImageToTicker();
@@ -410,12 +405,8 @@ export default {
           if (t === this.selectedTicker) {
             this.graph.push(price);
           }
-<<<<<<< HEAD
           t.currency = currency;
           t.price = typeof price === 'number' ? price : `Тикер ${t.name} временно недоступен`
-=======
-          t.price = price
->>>>>>> 271afee... add websockets
           });
     },
 
@@ -429,11 +420,7 @@ export default {
         this.selectedTicker = null;
       }
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
-<<<<<<< HEAD
       unSubscribeFromTicker(tickerToRemove.name, tickerToRemove.currency)
-=======
-      unSubscribeFromTicker(tickerToRemove.name)
->>>>>>> 271afee... add websockets
     },
 
     shuffleArray(array) {
