@@ -17,7 +17,7 @@
                 name="wallet"
                 id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                placeholder="Например DOGE"
+                :placeholder="randomCoin"
                 autocomplete="off"
               />
             </div>
@@ -146,7 +146,7 @@
                 <img class="ticker-img" :src="t.image" />
               </span>
               <dd class="mt-1 text-2xl font-semibold text-green-600">
-                {{ formatPrice(t.price) }}
+                {{ numberWithSpaces(t.price) }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -230,13 +230,13 @@ export default {
       tickers: [],
       selectedTicker: null,
       graph: [],
-      coinsList: [],
+      coinsList: {},
       possibleCoins: [],
       error: false,
       tickerIsNotExisting: false,
       page: 1,
-      image: "",
       sorting: "",
+      popularCoins: ['BTC', 'LTC', 'XPR', 'BCH', 'ETH', 'DOGE', 'USDT', 'XMR', 'DASH', 'ZEC'],
       choosedCurrency: "USD",
       filterName: "",
       filterPrice: {
@@ -264,10 +264,10 @@ export default {
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach(ticker => {
-        subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice));
+        subscribeToTicker(ticker.name, ticker.currency, newPrice => this.updateTicker(ticker.name, ticker.currency, newPrice));
       })
     }
-
+    
   },
 
   watch: {
@@ -365,8 +365,8 @@ export default {
         this.ticker = "";
         this.possibleCoins = [];
 
-        subscribeToTicker(currentTicker.name, newPrice =>
-          this.updateTicker(currentTicker.name, newPrice)
+        subscribeToTicker(currentTicker.name, currentTicker.currency, newPrice =>
+          this.updateTicker(currentTicker.name, currentTicker.currency, newPrice)
         )
 
         this.addImageToTicker();
@@ -375,13 +375,21 @@ export default {
     },
 
     clearTickers() {
-      unSubscribeFromTickers(this.tickers);
+      unSubscribeFromTickers(this.tickers, this.choosedCurrency);
       this.tickers = [];
       localStorage.clear();
     },
 
     switchCurrency(newCurrency) {
+      if (this.choosedCurrency === newCurrency) {
+        return;
+      }
+      unSubscribeFromTickers(this.tickers, this.choosedCurrency);
       this.choosedCurrency = newCurrency;
+      this.tickers.forEach(ticker => {
+        ticker.currency = newCurrency;
+        subscribeToTicker(ticker.name, ticker.currency, newPrice => this.updateTicker(ticker.name, ticker.currency, newPrice));
+        });
     },
 
     formatPrice(price) {
@@ -390,14 +398,15 @@ export default {
       }
     },
 
-    updateTicker(tickerName, price) {
+    updateTicker(tickerName, currency, price) {
       this.tickers
         .filter(t => t.name === tickerName)
         .forEach(t => {
           if (t === this.selectedTicker) {
             this.graph.push(price);
           }
-          t.price = price
+          t.currency = currency;
+          t.price = typeof price === 'number' ? price : `Тикер ${t.name} временно недоступен`
           });
     },
 
@@ -411,7 +420,7 @@ export default {
         this.selectedTicker = null;
       }
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
-      unSubscribeFromTicker(tickerToRemove.name)
+      unSubscribeFromTicker(tickerToRemove.name, tickerToRemove.currency)
     },
 
     shuffleArray(array) {
@@ -433,13 +442,12 @@ export default {
 
     numberWithSpaces(x) {
       if (typeof x !== 'number') {
-        return;
+        return x;
       }
       x = this.formatPrice(x);
       const parts = x.toString().split(".");
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      console.log(parts.join("."));
-      return parts.join(".");
+      return parts.join('.')
     },
 
     showCoins(event) {
@@ -472,6 +480,9 @@ export default {
   },
 
   computed: {
+    randomCoin() {
+      return "Например: " + this.shuffleArray(this.popularCoins)[0];
+    },
 
     startIndex() {
       return (this.page - 1) * 6;

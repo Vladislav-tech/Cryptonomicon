@@ -7,8 +7,14 @@ const socket = new WebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${API_
 const AGGREGATE_INDEX  = "5";
 
 socket.addEventListener('message', (evt) => {
-    const { TYPE: type, FROMSYMBOL: currency, PRICE: newPrice} = JSON.parse(evt.data);
+    const { TYPE: type, FROMSYMBOL: currency, PRICE: newPrice, PARAMETER: parameter} = JSON.parse(evt.data);
     
+    if (type === '500') {
+        let name = tickersHandlers.get(parameter.split('~')[2]);
+        let unavailableTickers = name ?? [];
+        unavailableTickers.forEach((fn) => fn(`Тикер ${name} временно недоступен`));
+    }
+
     if (type !== AGGREGATE_INDEX || newPrice === undefined) {
         return;
     }
@@ -32,44 +38,44 @@ function sendToWebSocket(message) {
 
 }
 
-function subscribeToTickerOnWs(ticker) {
+function subscribeToTickerOnWs(ticker, currency = 'USD') {
     sendToWebSocket({
         "action": "SubAdd",
-        "subs": [`5~CCCAGG~${ticker}~USD`],
+        "subs": [`5~CCCAGG~${ticker}~${currency}`],
     });
 }
 
-function UnSubscribeFromTickerOnWs(ticker) {
+function UnSubscribeFromTickerOnWs(ticker, currency = 'USD') {
     sendToWebSocket({
         "action": "SubRemove",
-        "subs": [`5~CCCAGG~${ticker}~USD`],
+        "subs": [`5~CCCAGG~${ticker}~${currency}`],
     });
 }
 
-function UnSubscribeFromTickersOnWs(tickers) {
+function UnSubscribeFromTickersOnWs(tickers, currency = 'USD') {
     tickers.forEach(ticker => {
         sendToWebSocket({
             "action": "SubRemove",
-            "subs": [`5~CCCAGG~${ticker.name}~USD`],
+            "subs": [`5~CCCAGG~${ticker.name}~${currency}`],
         });    
     });
 
 }
 
-export const subscribeToTicker = (ticker, callback) => {
+export const subscribeToTicker = (ticker, currency, callback) => {
     const subscribers = tickersHandlers.get(ticker) || [];
     tickersHandlers.set(ticker, [...subscribers, callback]);
-    subscribeToTickerOnWs(ticker);
+    subscribeToTickerOnWs(ticker, currency);
 };
 
-export const unSubscribeFromTicker = (ticker) => {
+export const unSubscribeFromTicker = (ticker, currency = 'USD') => {
     tickersHandlers.delete(ticker);
-    UnSubscribeFromTickerOnWs(ticker);
+    UnSubscribeFromTickerOnWs(ticker, currency);
 };
 
-export const unSubscribeFromTickers = (tickers) => {
+export const unSubscribeFromTickers = (tickers, currency = 'USD') => {
     tickersHandlers.clear();
-    UnSubscribeFromTickersOnWs(tickers);
+    UnSubscribeFromTickersOnWs(tickers, currency);
 };
 
 window.tickersHandlers = tickersHandlers;
