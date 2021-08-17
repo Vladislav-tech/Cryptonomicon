@@ -217,8 +217,12 @@
 </template>
 
 <script>
-import { subscribeToTicker, unSubscribeFromTicker, unSubscribeFromTickers } from './api';
-import { getCoinsList } from './api';
+import {
+  subscribeToTicker,
+  unSubscribeFromTicker,
+  unSubscribeFromTickers
+} from "./api";
+import { getCoinsList } from "./api";
 
 export default {
   name: "App",
@@ -236,7 +240,18 @@ export default {
       tickerIsNotExisting: false,
       page: 1,
       sorting: "",
-      popularCoins: ['BTC', 'LTC', 'XPR', 'BCH', 'ETH', 'DOGE', 'USDT', 'XMR', 'DASH', 'ZEC'],
+      popularCoins: [
+        "BTC",
+        "LTC",
+        "XPR",
+        "BCH",
+        "ETH",
+        "DOGE",
+        "USDT",
+        "XMR",
+        "DASH",
+        "ZEC"
+      ],
       choosedCurrency: "USD",
       filterName: "",
       filterPrice: {
@@ -264,10 +279,11 @@ export default {
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach(ticker => {
-        subscribeToTicker(ticker.name, ticker.currency, newPrice => this.updateTicker(ticker.name, ticker.currency, newPrice));
-      })
+        subscribeToTicker(ticker.name, ticker.currency, newPrice =>
+          this.updateTicker(ticker.name, ticker.currency, newPrice)
+        );
+      });
     }
-    
   },
 
   watch: {
@@ -324,11 +340,11 @@ export default {
     },
 
     error() {
-      setTimeout(() => this.error = false, 3500);
+      setTimeout(() => (this.error = false), 3500);
     },
 
     tickerIsNotExisting() {
-      setTimeout(() => this.tickerIsNotExisting = false, 3500);
+      setTimeout(() => (this.tickerIsNotExisting = false), 3500);
     },
 
     paginatedTickers() {
@@ -354,8 +370,9 @@ export default {
         const currentTicker = {
           name: value || this.ticker,
           price: "-",
-          image: "https://www.cryptocompare.com" +
-                this.coinsList[this.name]?.ImageUrl || "",
+          image:
+            "https://www.cryptocompare.com" +
+              this.coinsList[this.name]?.ImageUrl || "",
           currency: this.choosedCurrency
         };
 
@@ -365,12 +382,18 @@ export default {
         this.ticker = "";
         this.possibleCoins = [];
 
-        subscribeToTicker(currentTicker.name, currentTicker.currency, newPrice =>
-          this.updateTicker(currentTicker.name, currentTicker.currency, newPrice)
-        )
+        subscribeToTicker(
+          currentTicker.name,
+          currentTicker.currency,
+          newPrice =>
+            this.updateTicker(
+              currentTicker.name,
+              currentTicker.currency,
+              newPrice
+            )
+        );
 
         this.addImageToTicker();
-
       }
     },
 
@@ -388,12 +411,14 @@ export default {
       this.choosedCurrency = newCurrency;
       this.tickers.forEach(ticker => {
         ticker.currency = newCurrency;
-        subscribeToTicker(ticker.name, ticker.currency, newPrice => this.updateTicker(ticker.name, ticker.currency, newPrice));
-        });
+        subscribeToTicker(ticker.name, ticker.currency, newPrice =>
+          this.updateTicker(ticker.name, ticker.currency, newPrice)
+        );
+      });
     },
 
     formatPrice(price) {
-      if (typeof price === 'number') {
+      if (typeof price === "number") {
         return price > 1 ? +price.toFixed(3) : +price.toPrecision(3);
       }
     },
@@ -406,8 +431,11 @@ export default {
             this.graph.push(price);
           }
           t.currency = currency;
-          t.price = typeof price === 'number' ? price : `Тикер ${t.name} временно недоступен`
-          });
+          t.price =
+            typeof price === "number"
+              ? price
+              : `Тикер ${t.name} временно недоступен`;
+        });
     },
 
     select(ticker) {
@@ -420,7 +448,7 @@ export default {
         this.selectedTicker = null;
       }
       localStorage.setItem("tickers", JSON.stringify(this.tickers));
-      unSubscribeFromTicker(tickerToRemove.name, tickerToRemove.currency)
+      unSubscribeFromTicker(tickerToRemove.name, tickerToRemove.currency);
     },
 
     shuffleArray(array) {
@@ -441,13 +469,13 @@ export default {
     },
 
     numberWithSpaces(x) {
-      if (typeof x !== 'number') {
+      if (typeof x !== "number") {
         return x;
       }
       x = this.formatPrice(x);
       const parts = x.toString().split(".");
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      return parts.join('.')
+      return parts.join(".");
     },
 
     showCoins(event) {
@@ -463,16 +491,20 @@ export default {
 
     addImageToTicker() {
       this.tickers.forEach(ticker => {
-        ticker.image = "https://www.cryptocompare.com" +
-                this.coinsList[ticker.name]?.ImageUrl
-      })
+        ticker.image =
+          "https://www.cryptocompare.com" +
+          this.coinsList[ticker.name]?.ImageUrl;
+      });
     },
 
     canAddTicker(value) {
       if (this.tickers.length) {
         this.error = this.tickers.some(item => item.name === value);
         this.tickerIsNotExisting = !Object.keys(this.coinsList).includes(value);
-        return this.tickers.every(item => item.name !== value) && Object.keys(this.coinsList).includes(value);
+        return (
+          this.tickers.every(item => item.name !== value) &&
+          Object.keys(this.coinsList).includes(value)
+        );
       } else {
         return true;
       }
@@ -523,7 +555,9 @@ export default {
   },
 
   mounted() {
-    getCoinsList(this);
+    getCoinsList()
+      .then(response => response.json())
+      .then(response => (this.coinsList = response.Data));
   }
 };
 </script>
